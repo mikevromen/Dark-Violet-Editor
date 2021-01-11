@@ -1,12 +1,15 @@
 #
-from pathlib import Path
-from tkinter import *
-from tkinter import ttk
 import time
 import json
 import easygui
-from pdf2image import convert_from_path
 import os
+import shutil
+from pathlib import Path
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+from pdf2image import convert_from_path
+
 
 def chooseSize():
     size = input("Choose the screen size you want to change\n1- standard\n2- edgeToEdge\n")
@@ -34,6 +37,34 @@ def printSkinInfo(skin):
     print('Name: {}\nConsole: {}\nSkin identifier: {}'.format(
     skin["name"], skin["gameTypeIdentifier"].split('.')[-1:][0],skin['identifier']
     ))
+
+def openProject(path):
+    with open(str(skinpath) + "/info.json", "r") as file:
+        positions = json.load(file)
+    return positions
+
+def runGui(positions):
+    size = chooseSize()
+    orientation = chooseOrientation()
+
+    printSkinInfo(positions)
+
+    fenetre = Tk()
+    lol = Interface(fenetre)
+
+    fenetre.bind("<Button-1>", lol.collision)
+
+    fenetre.bind('<Left>', lol.move)
+    fenetre.bind('<Right>', lol.move)
+
+    fenetre.bind('<Up>', lol.move)
+    fenetre.bind('<Down>', lol.move)
+
+    fenetre.bind('<Control-s>', lol.save)
+
+    # fenetre.bind("<MouseWheel>", lol.wheel)
+
+    mainloop()
 
 class Interface(Frame):
 
@@ -168,29 +199,19 @@ class Interface(Frame):
             json.dump(file, positions, indent=2)
         print("Changes saved.")
 
-skinpath = Path(easygui.diropenbox(title="Select skin folder"))
 
-with open(str(skinpath) + "/info.json", "r") as file:
-    positions = json.load(file)
+positions = None
 
-size = chooseSize()
-orientation = chooseOrientation()
+while positions == None:
+    skinpath = Path(easygui.diropenbox(title="Select skin folder"))
 
-printSkinInfo(positions)
-
-fenetre = Tk()
-lol = Interface(fenetre)
-
-fenetre.bind("<Button-1>", lol.collision)
-
-fenetre.bind('<Left>', lol.move)
-fenetre.bind('<Right>', lol.move)
-
-fenetre.bind('<Up>', lol.move)
-fenetre.bind('<Down>', lol.move)
-
-fenetre.bind('<Control-s>', lol.save)
-
-# fenetre.bind("<MouseWheel>", lol.wheel)
-
-mainloop()
+    try:
+        positions = openProject(skinpath)
+        runGui(positions)
+    except FileNotFoundError as fileNotFoundEx:
+        print(fileNotFoundEx) # TODO to log file instead
+        createNew = messagebox.askyesno("No info.json found in the selected folder","Do you want to create an empty project?")
+        if createNew:
+            shutil.copy("template/default_info.json",f"{skinpath}/info.json")
+        else:
+            messagebox.showinfo("Incorrect path","Please select a folder that contains a info.json")
