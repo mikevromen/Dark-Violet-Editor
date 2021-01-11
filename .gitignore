@@ -1,1 +1,13 @@
 out.png
+
+# IDE
+.vscode
+
+# os
+.DS_STORE
+
+# Python
+.venv
+.env
+venv
+env
